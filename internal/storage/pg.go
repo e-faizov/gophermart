@@ -17,10 +17,10 @@ import (
 )
 
 const (
-	OT_NEW        = "NEW"
-	OT_PROCESSING = "PROCESSING"
-	OT_INVALID    = "INVALID"
-	OT_PROCESSED  = "PROCESSED"
+	OtNew        = "NEW"
+	OtProcessing = "PROCESSING"
+	OtInvalid    = "INVALID"
+	OtProcessed  = "PROCESSED"
 )
 
 func NewPgStore(conn, secret string) (*PgStore, error) {
@@ -30,8 +30,6 @@ func NewPgStore(conn, secret string) (*PgStore, error) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second*30)
 	defer cancel()
-
-	//clearTable(db)
 
 	err = initTables(ctx, db)
 	if err != nil {
@@ -49,13 +47,13 @@ type PgStore struct {
 	secret string
 }
 
-func (p *PgStore) Register(ctx context.Context, login, password string) (bool, error) {
+func (p *PgStore) Register(ctx context.Context, login, password string) (bool, string, error) {
 	hash := calcHash(password, p.secret)
 	uid := uuid.New()
 
 	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
-		return false, utils.ErrorHelper(err)
+		return false, "", utils.ErrorHelper(err)
 	}
 
 	rollback := func(err error) error {
@@ -70,22 +68,22 @@ func (p *PgStore) Register(ctx context.Context, login, password string) (bool, e
 	_, err = tx.ExecContext(ctx, sqlString, uid.String(), login, hash)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "users_login_uindex" {
-			return false, nil
+			return false, "", nil
 		}
-		return false, rollback(utils.ErrorHelper(err))
+		return false, "", rollback(utils.ErrorHelper(err))
 	}
 
 	sqlString = `insert into balances (user_id, balance) values ((select id from users where uuid=$1), 0)`
 	_, err = tx.ExecContext(ctx, sqlString, uid.String())
 	if err != nil {
-		return false, rollback(utils.ErrorHelper(err))
+		return false, "", rollback(utils.ErrorHelper(err))
 	}
 
 	err = tx.Commit()
 	if err != nil {
-		return false, utils.ErrorHelper(err)
+		return false, "", utils.ErrorHelper(err)
 	}
-	return true, nil
+	return true, uid.String(), nil
 }
 func (p *PgStore) Login(ctx context.Context, login, password string) (string, bool, error) {
 	hash := calcHash(password, p.secret)
@@ -95,6 +93,7 @@ func (p *PgStore) Login(ctx context.Context, login, password string) (string, bo
 	if err != nil {
 		return "", false, utils.ErrorHelper(err)
 	}
+	defer rows.Close()
 	count := 0
 	resUudi := ""
 	for rows.Next() {
@@ -103,6 +102,9 @@ func (p *PgStore) Login(ctx context.Context, login, password string) (string, bo
 		if err != nil {
 			return "", false, utils.ErrorHelper(err)
 		}
+	}
+	if err = rows.Err(); err != nil {
+		return "", false, utils.ErrorHelper(err)
 	}
 	if count != 1 {
 		return "", false, nil
@@ -113,7 +115,7 @@ func (p *PgStore) Login(ctx context.Context, login, password string) (string, bo
 func (p *PgStore) SaveOrder(ctx context.Context, user, order string) (bool, bool, error) {
 	script := `insert into orders (order_id, user_id, uploaded, status)
 				values ($1, (select id from users where type=$2), $3, (select id from order_types where type=$4))`
-	_, err := p.db.ExecContext(ctx, script, order, user, time.Now(), OT_NEW)
+	_, err := p.db.ExecContext(ctx, script, order, user, time.Now(), OtNew)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "orders_order_id_uindex" {
 			script = `select user_uuid from orders where order_id=$1`
@@ -143,6 +145,7 @@ func (p *PgStore) GetOrders(ctx context.Context, user string) ([]models.Order, e
 	if err != nil {
 		return nil, utils.ErrorHelper(err)
 	}
+	defer rows.Close()
 
 	var res []models.Order
 	for rows.Next() {
@@ -152,6 +155,9 @@ func (p *PgStore) GetOrders(ctx context.Context, user string) ([]models.Order, e
 			return nil, utils.ErrorHelper(err)
 		}
 		res = append(res, order)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, utils.ErrorHelper(err)
 	}
 	return res, nil
 }
@@ -165,6 +171,7 @@ func (p *PgStore) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string,
 	if err != nil {
 		return nil, utils.ErrorHelper(err)
 	}
+	defer rows.Close()
 
 	var res []string
 	for rows.Next() {
@@ -174,6 +181,9 @@ func (p *PgStore) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string,
 			return nil, utils.ErrorHelper(err)
 		}
 		res = append(res, order)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, utils.ErrorHelper(err)
 	}
 	return res, nil
 }
@@ -191,6 +201,7 @@ func (p *PgStore) WithdrawalsByUser(ctx context.Context, uuid string) ([]models.
 	if err != nil {
 		return nil, utils.ErrorHelper(err)
 	}
+	defer rows.Close()
 	var res []models.Withdraw
 
 	for rows.Next() {
@@ -200,6 +211,9 @@ func (p *PgStore) WithdrawalsByUser(ctx context.Context, uuid string) ([]models.
 			return nil, utils.ErrorHelper(err)
 		}
 		res = append(res, tmp)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, utils.ErrorHelper(err)
 	}
 
 	return res, nil

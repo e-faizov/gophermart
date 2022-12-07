@@ -30,7 +30,7 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "wrong body", http.StatusBadRequest)
 		return
 	}
-	ok, err := u.Store.Register(ctx, user.Login, user.Password)
+	ok, uid, err := u.Store.Register(ctx, user.Login, user.Password)
 	if err != nil {
 		log.Error().Err(err).Msg("User.Register sql error")
 		http.Error(w, "wrong body", http.StatusInternalServerError)
@@ -41,6 +41,16 @@ func (u *User) Register(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "already created", http.StatusConflict)
 		return
 	}
+
+	token, err := u.token(uid)
+	if err != nil {
+		log.Error().Err(err).Msg("User.Register error create token")
+		u.Logout(w, r)
+		http.Error(w, "wrong body", http.StatusInternalServerError)
+		return
+	}
+
+	setCookie(w, token)
 }
 
 func (u *User) Login(w http.ResponseWriter, r *http.Request) {
@@ -54,7 +64,7 @@ func (u *User) Login(w http.ResponseWriter, r *http.Request) {
 	}
 	uid, ok, err := u.Store.Login(ctx, user.Login, user.Password)
 	if err != nil {
-		log.Error().Err(err).Msg("User.Register error verify user")
+		log.Error().Err(err).Msg("User.Login error verify user")
 		u.Logout(w, r)
 		http.Error(w, "wrong body", http.StatusInternalServerError)
 		return
@@ -68,12 +78,16 @@ func (u *User) Login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := u.token(uid)
 	if err != nil {
-		log.Error().Err(err).Msg("User.Register error create token")
+		log.Error().Err(err).Msg("User.Login error create token")
 		u.Logout(w, r)
 		http.Error(w, "wrong body", http.StatusInternalServerError)
 		return
 	}
 
+	setCookie(w, token)
+}
+
+func setCookie(w http.ResponseWriter, token string) {
 	http.SetCookie(w, &http.Cookie{
 		HttpOnly: true,
 		Expires:  time.Now().Add(24 * time.Hour),

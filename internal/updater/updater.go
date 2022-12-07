@@ -24,7 +24,7 @@ func (s *StatusUpdater) worker() {
 }
 
 func (s *StatusUpdater) update(ctx context.Context) error {
-	newOrders, err := s.Store.GetOrderIdsByStatus(ctx, storage.OT_NEW)
+	newOrders, err := s.Store.GetOrderIdsByStatus(ctx, storage.OtNew)
 	if err != nil {
 		return err
 	}
@@ -36,7 +36,7 @@ func (s *StatusUpdater) update(ctx context.Context) error {
 		}
 
 		if !done && !fail {
-			err = s.Store.UpdateOrderStatus(ctx, order, storage.OT_PROCESSING)
+			err = s.Store.UpdateOrderStatus(ctx, order, storage.OtProcessing)
 			if err != nil {
 				return err
 			}
