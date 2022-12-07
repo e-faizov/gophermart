@@ -1,4 +1,4 @@
-name: gophermart
+name: codecoverage
 
 on:
   workflow_dispatch:
