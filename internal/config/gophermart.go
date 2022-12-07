@@ -2,13 +2,13 @@ package config
 
 import (
 	"flag"
-	
+
 	"github.com/caarlos0/env/v6"
 )
 
 type GopherMartCfg struct {
 	RunAddress           string `env:"RUN_ADDRESS"`
-	DatabaseUri          string `env:"DATABASE_URI"`
+	DatabaseURI          string `env:"DATABASE_URI"`
 	AccrualSystemAddress string `env:"ACCRUAL_SYSTEM_ADDRESS"`
 }
 
@@ -20,7 +20,7 @@ var (
 func GetConfig() GopherMartCfg {
 	if !inited {
 		flag.StringVar(&(cfg.RunAddress), "a", "localhost:8081", "RUN_ADDRESS")
-		flag.StringVar(&(cfg.DatabaseUri), "d", "", "DATABASE_URI")
+		flag.StringVar(&(cfg.DatabaseURI), "d", "", "DATABASE_URI")
 		flag.StringVar(&(cfg.AccrualSystemAddress), "r", "", "ACCRUAL_SYSTEM_ADDRESS")
 
 		flag.Parse()

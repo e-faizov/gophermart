@@ -120,12 +120,12 @@ func (p *PgStore) SaveOrder(ctx context.Context, user, order string) (bool, bool
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "orders_order_id_uindex" {
 			script = `select user_uuid from orders where order_id=$1`
 			row := p.db.QueryRowContext(ctx, script, order)
-			insertedUserId := ""
-			err = row.Scan(&insertedUserId)
+			insertedUserID := ""
+			err = row.Scan(&insertedUserID)
 			if err != nil {
 				return false, false, utils.ErrorHelper(err)
 			}
-			if insertedUserId == user {
+			if insertedUserID == user {
 				return false, true, nil
 			} else {
 				return false, false, nil
