@@ -18,7 +18,7 @@ var tokenAuth *jwtauth.JWTAuth
 const secret = "secret"
 
 func StartServer(cfg config.GopherMartCfg) error {
-	db, err := storage.NewPgStore(cfg.DatabaseUri, secret)
+	db, err := storage.NewPgStore(cfg.DatabaseURI, secret)
 	if err != nil {
 		panic(err)
 	}
