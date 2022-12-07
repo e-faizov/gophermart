@@ -4,10 +4,11 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/e-faizov/gophermart/internal/models"
-	"github.com/e-faizov/gophermart/internal/utils"
 	"io"
 	"net/http"
+
+	"github.com/e-faizov/gophermart/internal/models"
+	"github.com/e-faizov/gophermart/internal/utils"
 )
 
 type Scores struct {

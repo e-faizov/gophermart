@@ -2,12 +2,14 @@ package handlers
 
 import (
 	"encoding/json"
-	"github.com/e-faizov/gophermart/internal/models"
+	"io"
+	"net/http"
+
 	"github.com/go-chi/render"
 	"github.com/joeljunstrom/go-luhn"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
+
+	"github.com/e-faizov/gophermart/internal/models"
 )
 
 func (o *Orders) Balance(w http.ResponseWriter, r *http.Request) {

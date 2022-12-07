@@ -2,6 +2,7 @@ package updater
 
 import (
 	"context"
+
 	"github.com/e-faizov/gophermart/internal/interfaces"
 	"github.com/e-faizov/gophermart/internal/storage"
 )

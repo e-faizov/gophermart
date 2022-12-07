@@ -3,7 +3,6 @@ package handlers
 import (
 	"encoding/json"
 	"errors"
-	"github.com/e-faizov/gophermart/internal/utils"
 	"io"
 	"net/http"
 	"time"
@@ -13,6 +12,7 @@ import (
 
 	"github.com/e-faizov/gophermart/internal/interfaces"
 	"github.com/e-faizov/gophermart/internal/models"
+	"github.com/e-faizov/gophermart/internal/utils"
 )
 
 const userUuid = "user_uuid"

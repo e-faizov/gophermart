@@ -1,12 +1,14 @@
 package handlers
 
 import (
-	"github.com/e-faizov/gophermart/internal/interfaces"
+	"io"
+	"net/http"
+
 	"github.com/go-chi/render"
 	"github.com/joeljunstrom/go-luhn"
 	"github.com/rs/zerolog/log"
-	"io"
-	"net/http"
+
+	"github.com/e-faizov/gophermart/internal/interfaces"
 )
 
 type Orders struct {

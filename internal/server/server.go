@@ -1,15 +1,16 @@
 package server
 
 import (
-	"github.com/e-faizov/gophermart/internal/config"
-	"github.com/e-faizov/gophermart/internal/handlers"
-	"github.com/e-faizov/gophermart/internal/middlewares"
-	"github.com/e-faizov/gophermart/internal/storage"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/jwtauth"
+
+	"github.com/e-faizov/gophermart/internal/config"
+	"github.com/e-faizov/gophermart/internal/handlers"
+	"github.com/e-faizov/gophermart/internal/middlewares"
+	"github.com/e-faizov/gophermart/internal/storage"
 )
 
 var tokenAuth *jwtauth.JWTAuth

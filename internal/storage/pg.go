@@ -6,13 +6,13 @@ import (
 	"crypto/sha256"
 	"database/sql"
 	"fmt"
-	"github.com/e-faizov/gophermart/internal/models"
-	"github.com/hashicorp/go-multierror"
 	"time"
 
 	"github.com/google/uuid"
+	"github.com/hashicorp/go-multierror"
 	"github.com/lib/pq"
 
+	"github.com/e-faizov/gophermart/internal/models"
 	"github.com/e-faizov/gophermart/internal/utils"
 )
 
