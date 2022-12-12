@@ -18,7 +18,7 @@ type OrdersStorage interface {
 	UpdateOrder(ctx context.Context, order models.Order) error
 }
 
-type BalanceStore interface {
+type BalanceStorage interface {
 	Withdraw(ctx context.Context, withdraw models.Withdraw, uuid string) (notEnough bool, err error)
 	WithdrawalsByUser(ctx context.Context, uuid string) ([]models.Withdraw, error)
 	BalanceByUser(ctx context.Context, uuid string) (models.Balance, error)

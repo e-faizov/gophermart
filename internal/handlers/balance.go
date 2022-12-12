@@ -14,7 +14,7 @@ import (
 )
 
 type Balances struct {
-	Store interfaces.BalanceStore
+	Store interfaces.BalanceStorage
 }
 
 func (b *Balances) Balance(w http.ResponseWriter, r *http.Request) {

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/rs/zerolog/log"
+	
 	"github.com/e-faizov/gophermart/internal/config"
 	"github.com/e-faizov/gophermart/internal/server"
 )
@@ -8,5 +10,6 @@ import (
 func main() {
 	cfg := config.GetConfig()
 
-	server.StartServer(cfg)
+	err := server.StartServer(cfg)
+	log.Error().Err(err).Msg("fail start server")
 }

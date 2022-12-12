@@ -58,7 +58,7 @@ func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) 
 
 	for _, order := range orders {
 		log.Info().Msg("update order " + order + " with status " + status)
-		newOrder, toManyReq, err := s.Scores.GetScore(ctx, order)
+		updatedOrder, toManyReq, err := s.Scores.GetScore(ctx, order)
 		if err != nil {
 			return false, err
 		}
@@ -67,8 +67,8 @@ func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) 
 			return toManyReq, nil
 		}
 
-		if newOrder.Status != status {
-			err = s.Store.UpdateOrder(ctx, newOrder)
+		if updatedOrder.Status != status {
+			err = s.Store.UpdateOrder(ctx, updatedOrder)
 			if err != nil {
 				return false, err
 			}

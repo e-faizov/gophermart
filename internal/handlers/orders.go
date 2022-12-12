@@ -25,7 +25,7 @@ func (o *Orders) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userId, err := getUserFromReq(r)
+	userID, err := getUserFromReq(r)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Post error get user from request")
 		http.Error(w, "", http.StatusUnauthorized)
@@ -40,7 +40,7 @@ func (o *Orders) Post(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	inserted, thisUser, err := o.Store.SaveOrder(ctx, userId, id)
+	inserted, thisUser, err := o.Store.SaveOrder(ctx, userID, id)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Post error save order number")
 		http.Error(w, "", http.StatusInternalServerError)
@@ -61,14 +61,14 @@ func (o *Orders) Post(w http.ResponseWriter, r *http.Request) {
 func (o *Orders) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userId, err := getUserFromReq(r)
+	userID, err := getUserFromReq(r)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Get error get user from request")
 		http.Error(w, "", http.StatusUnauthorized)
 		return
 	}
 
-	orders, err := o.Store.GetOrders(ctx, userId)
+	orders, err := o.Store.GetOrders(ctx, userID)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Get error get orders")
 		http.Error(w, "", http.StatusInternalServerError)

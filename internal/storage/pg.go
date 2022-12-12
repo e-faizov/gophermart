@@ -167,7 +167,8 @@ func (p *PgStore) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string,
 	script := `select t1.order_id from orders t1
 				join order_types t2
 				on t1.status=t2.id
-				where t2.type=$1`
+				where t2.type=$1
+				order by uploaded`
 	rows, err := p.db.QueryContext(ctx, script, tp)
 	if err != nil {
 		return nil, utils.ErrorHelper(err)
