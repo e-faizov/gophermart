@@ -72,7 +72,7 @@ func createOrdersTable(ctx context.Context, db *sql.DB) error {
 		`create table orders
 (
 	id serial,
-	order_id int not null,
+	order_id text not null,
 	user_id int not null,
 	uploaded timestamp not null,
 	status int not null,
