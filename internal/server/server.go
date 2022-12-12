@@ -64,7 +64,7 @@ func StartServer(cfg config.GopherMartCfg) error {
 		ar.Post("/orders", ordersHandler.Post)
 		ar.Get("/orders", ordersHandler.Get)
 		ar.Post("/balance/withdraw", balancesHandler.Withdraw)
-		ar.Get("/balance/withdrawals", balancesHandler.Withdrawals)
+		ar.Get("/withdrawals", balancesHandler.Withdrawals)
 		ar.Get("/balance", balancesHandler.Balance)
 	})
 
