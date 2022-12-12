@@ -9,10 +9,15 @@ import (
 	"github.com/joeljunstrom/go-luhn"
 	"github.com/rs/zerolog/log"
 
+	"github.com/e-faizov/gophermart/internal/interfaces"
 	"github.com/e-faizov/gophermart/internal/models"
 )
 
-func (o *Orders) Balance(w http.ResponseWriter, r *http.Request) {
+type Balances struct {
+	Store interfaces.BalanceStore
+}
+
+func (b *Balances) Balance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userId, err := getUserFromReq(r)
@@ -22,7 +27,7 @@ func (o *Orders) Balance(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	res, err := o.Store.BalanceByUser(ctx, userId)
+	res, err := b.Store.BalanceByUser(ctx, userId)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Balance error get balance by user")
 		http.Error(w, "", http.StatusInternalServerError)
@@ -32,7 +37,7 @@ func (o *Orders) Balance(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, res)
 }
 
-func (o *Orders) Withdrawals(w http.ResponseWriter, r *http.Request) {
+func (b *Balances) Withdrawals(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userId, err := getUserFromReq(r)
@@ -42,7 +47,7 @@ func (o *Orders) Withdrawals(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	withdrawals, err := o.Store.WithdrawalsByUser(ctx, userId)
+	withdrawals, err := b.Store.WithdrawalsByUser(ctx, userId)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Withdrawals error WithdrawalsByUser")
 		http.Error(w, "", http.StatusInternalServerError)
@@ -56,7 +61,7 @@ func (o *Orders) Withdrawals(w http.ResponseWriter, r *http.Request) {
 	render.JSON(w, r, withdrawals)
 }
 
-func (o *Orders) Withdraw(w http.ResponseWriter, r *http.Request) {
+func (b *Balances) Withdraw(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	userId, err := getUserFromReq(r)
@@ -66,7 +71,7 @@ func (o *Orders) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	b, err := io.ReadAll(r.Body)
+	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Withdraw error read body")
 		http.Error(w, "wrong body", http.StatusInternalServerError)
@@ -74,7 +79,7 @@ func (o *Orders) Withdraw(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var withdraw models.Withdraw
-	err = json.Unmarshal(b, &withdraw)
+	err = json.Unmarshal(body, &withdraw)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Withdraw error unmarshal body")
 		http.Error(w, "wrong body", http.StatusInternalServerError)
@@ -87,7 +92,7 @@ func (o *Orders) Withdraw(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	notEnough, err := o.Store.Withdraw(ctx, withdraw, userId)
+	notEnough, err := b.Store.Withdraw(ctx, withdraw, userId)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Withdraw error withdraw")
 		http.Error(w, "", http.StatusInternalServerError)

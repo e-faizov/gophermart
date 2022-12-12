@@ -5,6 +5,7 @@ import (
 	"crypto/hmac"
 	"crypto/sha256"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -114,11 +115,11 @@ func (p *PgStore) Login(ctx context.Context, login, password string) (string, bo
 
 func (p *PgStore) SaveOrder(ctx context.Context, user, order string) (bool, bool, error) {
 	script := `insert into orders (order_id, user_id, uploaded, status)
-				values ($1, (select id from users where type=$2), $3, (select id from order_types where type=$4))`
+				values ($1, (select id from users where uuid=$2), $3, (select id from order_types where type=$4))`
 	_, err := p.db.ExecContext(ctx, script, order, user, time.Now(), OtNew)
 	if err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "orders_order_id_uindex" {
-			script = `select user_uuid from orders where order_id=$1`
+			script = `select uuid from users where id=(select user_id from orders where order_id=$1)`
 			row := p.db.QueryRowContext(ctx, script, order)
 			insertedUserID := ""
 			err = row.Scan(&insertedUserID)
@@ -140,7 +141,7 @@ func (p *PgStore) GetOrders(ctx context.Context, user string) ([]models.Order, e
 	script := `select t1.order_id, t1.uploaded, t2.type, t1.accrual from orders t1
 				join order_types t2
 				on t1.status=t2.id
-				where user_id=(select id from users where uuid=$1)`
+				where t1.user_id=(select id from users where uuid=$1)`
 	rows, err := p.db.QueryContext(ctx, script, user)
 	if err != nil {
 		return nil, utils.ErrorHelper(err)
@@ -166,7 +167,7 @@ func (p *PgStore) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string,
 	script := `select t1.order_id from orders t1
 				join order_types t2
 				on t1.status=t2.id
-				where t2.type=$2`
+				where t2.type=$1`
 	rows, err := p.db.QueryContext(ctx, script, tp)
 	if err != nil {
 		return nil, utils.ErrorHelper(err)
@@ -188,14 +189,25 @@ func (p *PgStore) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string,
 	return res, nil
 }
 
-func (p *PgStore) UpdateOrderStatus(ctx context.Context, order, status string) error {
-	script := "update orders set status=(select id where type=$1) where order_id=$2"
-	_, err := p.db.ExecContext(ctx, script, status, order)
-	return utils.ErrorHelper(err)
+func (p *PgStore) UpdateOrder(ctx context.Context, order models.Order) error {
+	switch order.Status {
+	case OtInvalid, OtNew, OtProcessing:
+		script := "update orders set status=(select id from order_types where type=$1) where order_id=$2"
+		_, err := p.db.ExecContext(ctx, script, order.Status, order.Number)
+		return utils.ErrorHelper(err)
+	case OtProcessed:
+		script :=
+			`with order_update as (update orders set status=(select id from order_types where type=$1), accrual=$2 where order_id=$3 returning user_id)
+		update balances set balance=balance+$2 where user_id=(select user_id from order_update)`
+		_, err := p.db.ExecContext(ctx, script, order.Status, order.Accrual, order.Number)
+		return utils.ErrorHelper(err)
+	}
+
+	return utils.ErrorHelper(errors.New("unknown order status: " + order.Status))
 }
 
 func (p *PgStore) WithdrawalsByUser(ctx context.Context, uuid string) ([]models.Withdraw, error) {
-	sqlString := `select order_id, sum, processed from withdrawals where user_id=(select id from users where uuid=$1)`
+	sqlString := "select order_id, sum, processed from withdrawals where user_id=(select id from users where uuid=$1)"
 
 	rows, err := p.db.QueryContext(ctx, sqlString, uuid)
 	if err != nil {
@@ -260,7 +272,7 @@ func (p *PgStore) Withdraw(ctx context.Context, withdraw models.Withdraw, uuid s
 
 	_, err = tx.ExecContext(ctx, sqlString, withdraw.Sum, uuid)
 	if err != nil {
-		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "users_login_uindex" {
+		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "balances_nonnegative" {
 			return true, nil
 		}
 		return false, rollback(utils.ErrorHelper(err))

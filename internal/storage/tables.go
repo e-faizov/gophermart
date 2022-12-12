@@ -6,6 +6,7 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-multierror"
+	"github.com/rs/zerolog/log"
 
 	"github.com/e-faizov/gophermart/internal/utils"
 )
@@ -105,20 +106,6 @@ func createUsersTable(ctx context.Context, db *sql.DB) error {
 	return utils.ErrorHelper(err)
 }
 
-/*
-create table withdrawals
-(
-    id        serial,
-    user_id   int       not null,
-    order_id  text      not null,
-    sum       float8    not null,
-    processed timestamp not null
-);
-
-create unique index withdrawals_order_id_uindex
-    on withdrawals (order_id);
-*/
-
 func createWithdrawalsTable(ctx context.Context, db *sql.DB) error {
 	err := createTable(ctx, db,
 		`create table withdrawals
@@ -155,6 +142,7 @@ func initTables(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("error create users: %v", err)
 		}
+		log.Info().Msg("users table created")
 	}
 
 	exist = tableExist(ctx, db, "orders")
@@ -163,6 +151,7 @@ func initTables(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("error create orders: %v", err)
 		}
+		log.Info().Msg("users orders created")
 	}
 
 	exist = tableExist(ctx, db, "order_types")
@@ -171,6 +160,7 @@ func initTables(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("error create order_types: %v", err)
 		}
+		log.Info().Msg("users order_types created")
 	}
 
 	exist = tableExist(ctx, db, "balances")
@@ -179,6 +169,7 @@ func initTables(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("error create order_types: %v", err)
 		}
+		log.Info().Msg("users balances created")
 	}
 
 	exist = tableExist(ctx, db, "withdrawals")
@@ -187,6 +178,7 @@ func initTables(ctx context.Context, db *sql.DB) error {
 		if err != nil {
 			return fmt.Errorf("error create order_types: %v", err)
 		}
+		log.Info().Msg("users withdrawals created")
 	}
 	return nil
 }
@@ -195,4 +187,6 @@ func clearTable(db *sql.DB) {
 	db.Exec("drop table users")
 	db.Exec("drop table orders")
 	db.Exec("drop table order_types")
+	db.Exec("drop table balances")
+	db.Exec("drop table withdrawals")
 }

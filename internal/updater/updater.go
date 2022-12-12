@@ -2,45 +2,78 @@ package updater
 
 import (
 	"context"
+	"time"
+
+	"github.com/rs/zerolog/log"
 
 	"github.com/e-faizov/gophermart/internal/interfaces"
 	"github.com/e-faizov/gophermart/internal/storage"
 )
 
-type StatusUpdater struct {
+type OrderUpdater struct {
 	Scores interfaces.Scores
 	Store  interfaces.OrdersStorage
 }
 
-func (s *StatusUpdater) Start() {
+func (s *OrderUpdater) Start() {
 	go s.worker()
 }
 
-func (s *StatusUpdater) worker() {
+func (s *OrderUpdater) worker() {
 	ctx := context.Background()
 	for {
-		s.update(ctx)
+		toManyReq, err := s.update(ctx, storage.OtNew)
+		if err != nil {
+			log.Error().Err(err).Msg("OrderUpdater.worker error update " + storage.OtNew)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if toManyReq {
+			time.Sleep(time.Minute)
+			continue
+		}
+
+		toManyReq, err = s.update(ctx, storage.OtProcessing)
+		if err != nil {
+			log.Error().Err(err).Msg("OrderUpdater.worker error update " + storage.OtProcessing)
+			time.Sleep(time.Second)
+			continue
+		}
+
+		if toManyReq {
+			time.Sleep(time.Minute)
+			continue
+		}
+
+		time.Sleep(time.Second)
 	}
 }
 
-func (s *StatusUpdater) update(ctx context.Context) error {
-	newOrders, err := s.Store.GetOrderIdsByStatus(ctx, storage.OtNew)
+func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) {
+	orders, err := s.Store.GetOrderIdsByStatus(ctx, status)
 	if err != nil {
-		return err
+		return false, err
 	}
 
-	for _, order := range newOrders {
-		_, done, fail, err := s.Scores.GetScore(ctx, order)
+	for _, order := range orders {
+		log.Info().Msg("update order " + order + " with status " + status)
+		newOrder, toManyReq, err := s.Scores.GetScore(ctx, order)
 		if err != nil {
-			return err
+			return false, err
 		}
 
-		if !done && !fail {
-			err = s.Store.UpdateOrderStatus(ctx, order, storage.OtProcessing)
+		if toManyReq {
+			return toManyReq, nil
+		}
+
+		if newOrder.Status != status {
+			err = s.Store.UpdateOrder(ctx, newOrder)
 			if err != nil {
-				return err
+				return false, err
 			}
 		}
+
 	}
-	return nil
+	return false, nil
 }

@@ -4,47 +4,66 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 
 	"github.com/e-faizov/gophermart/internal/models"
+	"github.com/e-faizov/gophermart/internal/storage"
 	"github.com/e-faizov/gophermart/internal/utils"
 )
 
 type Scores struct {
+	Url string
 }
 
-func (s *Scores) GetScore(ctx context.Context, order string) (accrual float64, done bool, fail bool, err error) {
-	resp, err := http.Get("localhost:3000/api/order/" + order)
+func (s *Scores) GetScore(ctx context.Context, order string) (new models.Order, toManyReq bool, err error) {
+	resp, err := http.Get(s.Url + "/api/orders/" + order)
 	if err != nil {
-		return 0, false, false, utils.ErrorHelper(err)
+		return models.Order{}, false, utils.ErrorHelper(err)
 	}
 	defer resp.Body.Close()
 
+	if resp.StatusCode == http.StatusTooManyRequests {
+		return models.Order{}, true, nil
+	}
+
 	body, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return 0, false, false, utils.ErrorHelper(err)
+		return models.Order{}, false, utils.ErrorHelper(err)
 	}
 
 	var scores models.Scores
 
+	fmt.Println(string(body))
+
 	err = json.Unmarshal(body, &scores)
 	if err != nil {
-		return 0, false, false, utils.ErrorHelper(err)
+		return models.Order{}, false, utils.ErrorHelper(err)
 	}
 
 	switch scores.Status {
 	case "REGISTERED", "PROCESSING":
-		return 0, false, false, nil
+		return models.Order{
+			Number: order,
+			Status: storage.OtProcessing,
+		}, false, nil
 	case "PROCESSED":
 		var acc float64
 		if scores.Accrual != nil {
 			acc = *scores.Accrual
 		}
-		return acc, true, false, nil
+		return models.Order{
+			Number:  order,
+			Status:  storage.OtProcessed,
+			Accrual: &acc,
+		}, false, nil
 	case "INVALID":
-		return 0, false, true, nil
+		return models.Order{
+			Number: order,
+			Status: storage.OtInvalid,
+		}, false, nil
 	}
 
-	return 0, false, false, errors.New("error")
+	return models.Order{}, false, errors.New("error")
 }

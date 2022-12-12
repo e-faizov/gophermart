@@ -10,7 +10,9 @@ import (
 	"github.com/e-faizov/gophermart/internal/config"
 	"github.com/e-faizov/gophermart/internal/handlers"
 	"github.com/e-faizov/gophermart/internal/middlewares"
+	"github.com/e-faizov/gophermart/internal/scores"
 	"github.com/e-faizov/gophermart/internal/storage"
+	"github.com/e-faizov/gophermart/internal/updater"
 )
 
 var tokenAuth *jwtauth.JWTAuth
@@ -25,9 +27,6 @@ func StartServer(cfg config.GopherMartCfg) error {
 
 	tokenAuth = jwtauth.New("HS256", []byte("secret"), nil)
 
-	r := chi.NewRouter()
-	r.Use(middleware.Compress(5))
-
 	userHandlers := handlers.User{
 		Store:     db,
 		TokenAuth: tokenAuth,
@@ -36,6 +35,24 @@ func StartServer(cfg config.GopherMartCfg) error {
 	ordersHandler := handlers.Orders{
 		Store: db,
 	}
+
+	balancesHandler := handlers.Balances{
+		Store: db,
+	}
+
+	scoresServ := scores.Scores{
+		Url: cfg.AccrualSystemAddress,
+	}
+
+	orderUpdater := updater.OrderUpdater{
+		Store:  db,
+		Scores: &scoresServ,
+	}
+
+	orderUpdater.Start()
+
+	r := chi.NewRouter()
+	r.Use(middleware.Compress(5))
 
 	r.Route("/api/user", func(r chi.Router) {
 		r.Post("/register", userHandlers.Register)
@@ -46,9 +63,9 @@ func StartServer(cfg config.GopherMartCfg) error {
 
 		ar.Post("/orders", ordersHandler.Post)
 		ar.Get("/orders", ordersHandler.Get)
-		ar.Post("/balance/withdraw", ordersHandler.Withdraw)
-		ar.Get("/balance/withdrawals", ordersHandler.Withdrawals)
-		ar.Get("/balance", ordersHandler.Balance)
+		ar.Post("/balance/withdraw", balancesHandler.Withdraw)
+		ar.Get("/balance/withdrawals", balancesHandler.Withdrawals)
+		ar.Get("/balance", balancesHandler.Balance)
 	})
 
 	return http.ListenAndServe(cfg.RunAddress, r)
