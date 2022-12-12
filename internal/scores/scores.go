@@ -14,11 +14,11 @@ import (
 )
 
 type Scores struct {
-	Url string
+	URL string
 }
 
 func (s *Scores) GetScore(ctx context.Context, order string) (new models.Order, toManyReq bool, err error) {
-	resp, err := http.Get(s.Url + "/api/orders/" + order)
+	resp, err := http.Get(s.URL + "/api/orders/" + order)
 	if err != nil {
 		return models.Order{}, false, utils.ErrorHelper(err)
 	}

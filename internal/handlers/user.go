@@ -15,7 +15,7 @@ import (
 	"github.com/e-faizov/gophermart/internal/utils"
 )
 
-const userUuid = "user_uuid"
+const userUUID = "user_uuid"
 
 type User struct {
 	Store     interfaces.UserStorage
@@ -108,7 +108,7 @@ func (u *User) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *User) token(user string) (string, error) {
-	_, tokenString, err := u.TokenAuth.Encode(map[string]interface{}{userUuid: user})
+	_, tokenString, err := u.TokenAuth.Encode(map[string]interface{}{userUUID: user})
 	return tokenString, err
 }
 
@@ -132,7 +132,7 @@ func getUserFromReq(r *http.Request) (string, error) {
 		return "", err
 	}
 
-	ret, ok := claims[userUuid]
+	ret, ok := claims[userUUID]
 	if !ok {
 		return "", errors.New("user not found")
 	}

@@ -41,7 +41,7 @@ func StartServer(cfg config.GopherMartCfg) error {
 	}
 
 	scoresServ := scores.Scores{
-		Url: cfg.AccrualSystemAddress,
+		URL: cfg.AccrualSystemAddress,
 	}
 
 	orderUpdater := updater.OrderUpdater{
