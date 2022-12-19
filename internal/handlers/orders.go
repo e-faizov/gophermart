@@ -18,17 +18,17 @@ type Orders struct {
 func (o *Orders) Post(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	b, err := io.ReadAll(r.Body)
-	if err != nil {
-		log.Error().Err(err).Msg("Orders.Post error read body")
-		http.Error(w, "wrong body", http.StatusInternalServerError)
-		return
-	}
-
 	userID, err := getUserFromReq(r)
 	if err != nil {
 		log.Error().Err(err).Msg("Orders.Post error get user from request")
 		http.Error(w, "", http.StatusUnauthorized)
+		return
+	}
+
+	b, err := io.ReadAll(r.Body)
+	if err != nil {
+		log.Error().Err(err).Msg("Orders.Post error read body")
+		http.Error(w, "wrong body", http.StatusInternalServerError)
 		return
 	}
 

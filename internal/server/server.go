@@ -50,6 +50,7 @@ func StartServer(cfg config.GopherMartCfg) error {
 	}
 
 	orderUpdater.Start()
+	defer orderUpdater.Stop()
 
 	r := chi.NewRouter()
 	r.Use(middleware.Compress(5))

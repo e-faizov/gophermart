@@ -2,51 +2,66 @@ package updater
 
 import (
 	"context"
+	"github.com/e-faizov/gophermart/internal/storage"
+	"github.com/rs/zerolog/log"
 	"time"
 
-	"github.com/rs/zerolog/log"
-
 	"github.com/e-faizov/gophermart/internal/interfaces"
-	"github.com/e-faizov/gophermart/internal/storage"
 )
 
 type OrderUpdater struct {
 	Scores interfaces.Scores
 	Store  interfaces.OrdersStorage
+	cancel context.CancelFunc
+	done   chan struct{}
 }
 
 func (s *OrderUpdater) Start() {
-	go s.worker()
+	ctx, cancel := context.WithCancel(context.Background())
+	s.done = make(chan struct{})
+	s.cancel = cancel
+	go s.worker(ctx)
 }
 
-func (s *OrderUpdater) worker() {
-	ctx := context.Background()
+func (s *OrderUpdater) Stop() {
+	s.cancel()
+	<-s.done
+}
+
+func (s *OrderUpdater) worker(ctx context.Context) {
+	var sleep time.Duration
 	for {
-		toManyReq, err := s.update(ctx, storage.OtNew)
-		if err != nil {
-			log.Error().Err(err).Msg("OrderUpdater.worker error update " + storage.OtNew)
-			time.Sleep(time.Second)
-			continue
-		}
+		select {
+		case <-ctx.Done():
+			s.done <- struct{}{}
+			return
+		default:
+			time.Sleep(sleep)
+			toManyReq, err := s.update(ctx, storage.OtNew)
+			if err != nil {
+				log.Error().Err(err).Msg("OrderUpdater.worker error update " + storage.OtNew)
+				sleep = time.Second
+				continue
+			}
 
-		if toManyReq {
-			time.Sleep(time.Minute)
-			continue
-		}
+			if toManyReq {
+				sleep = time.Minute
+				continue
+			}
 
-		toManyReq, err = s.update(ctx, storage.OtProcessing)
-		if err != nil {
-			log.Error().Err(err).Msg("OrderUpdater.worker error update " + storage.OtProcessing)
-			time.Sleep(time.Second)
-			continue
-		}
+			toManyReq, err = s.update(ctx, storage.OtProcessing)
+			if err != nil {
+				log.Error().Err(err).Msg("OrderUpdater.worker error update " + storage.OtProcessing)
+				sleep = time.Second
+				continue
+			}
 
-		if toManyReq {
-			time.Sleep(time.Minute)
-			continue
+			if toManyReq {
+				sleep = time.Minute
+				continue
+			}
+			sleep = time.Second
 		}
-
-		time.Sleep(time.Second)
 	}
 }
 
