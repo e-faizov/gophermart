@@ -67,7 +67,7 @@ func TestOrdersGetHandler(t *testing.T) {
 		tStore.getOrders = func(ctx context.Context, user string) ([]models.Order, error) {
 			return data, nil
 		}
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusOK {
 			t.Error("error, code not 200, code:", wr.Code)
@@ -119,7 +119,7 @@ func TestOrdersGetHandler(t *testing.T) {
 		tStore.getOrders = func(ctx context.Context, user string) ([]models.Order, error) {
 			return nil, errors.New("db error")
 		}
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusInternalServerError {
 			t.Error("error, code not 500, code:", wr.Code)

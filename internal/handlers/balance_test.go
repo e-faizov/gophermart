@@ -66,7 +66,7 @@ func TestWithdrawalsHandler(t *testing.T) {
 		tStore.withdrawalsByUserFunc = func(ctx context.Context, uuid string) ([]models.Withdraw, error) {
 			return data, nil
 		}
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusOK {
 			t.Fatal("error, code not 200, code:", wr.Code)
@@ -103,7 +103,7 @@ func TestWithdrawalsHandler(t *testing.T) {
 		tStore.withdrawalsByUserFunc = func(ctx context.Context, uuid string) ([]models.Withdraw, error) {
 			return []models.Withdraw{}, nil
 		}
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusNoContent {
 			t.Fatal("error, code not 204, code:", wr.Code)
@@ -116,7 +116,7 @@ func TestWithdrawalsHandler(t *testing.T) {
 		tStore.withdrawalsByUserFunc = func(ctx context.Context, uuid string) ([]models.Withdraw, error) {
 			return nil, errors.New("user not found")
 		}
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusInternalServerError {
 			t.Fatal("error, code not 500, code:", wr.Code)
@@ -150,7 +150,7 @@ func TestWithdrawHandler(t *testing.T) {
 		}
 
 		req = req.WithContext(contextWithJwt(context.Background(), "test user"))
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusOK {
 			t.Fatal("error, code not 200, code:", wr.Code)
@@ -169,7 +169,7 @@ func TestWithdrawHandler(t *testing.T) {
 		}
 
 		req = req.WithContext(contextWithJwt(context.Background(), "test user"))
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusInternalServerError {
 			t.Fatal("error, code not 500, code:", wr.Code)
@@ -188,7 +188,7 @@ func TestWithdrawHandler(t *testing.T) {
 		}
 
 		req = req.WithContext(contextWithJwt(context.Background(), "test user"))
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusPaymentRequired {
 			t.Fatal("error, code not 402, code:", wr.Code)
@@ -202,7 +202,7 @@ func TestWithdrawHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		req = req.WithContext(contextWithJwt(context.Background(), "test user"))
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusUnprocessableEntity {
 			t.Fatal("error, code not 422, code:", wr.Code)
@@ -216,7 +216,7 @@ func TestWithdrawHandler(t *testing.T) {
 			t.Fatal(err)
 		}
 		req = req.WithContext(contextWithJwt(context.Background(), "test user"))
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusInternalServerError {
 			t.Fatal("error, code not 500, code:", wr.Code)
@@ -256,7 +256,7 @@ func TestBalanceHandler(t *testing.T) {
 		tStore.balanceByUserFunc = func(ctx context.Context, uuid string) (models.Balance, error) {
 			return data, nil
 		}
-		wr := serveHttp(testRouter, req)
+		wr := serveHTTP(testRouter, req)
 
 		if wr.Code != http.StatusOK {
 			t.Error("error, code not 200, code:", wr.Code)
@@ -294,7 +294,7 @@ func userNotFoundTestFunc(store *testBalanceStore, req *http.Request, rt *chi.Mu
 		store.balanceByUserFunc = func(ctx context.Context, uuid string) (models.Balance, error) {
 			return models.Balance{}, errors.New("user not found")
 		}
-		wr := serveHttp(rt, req)
+		wr := serveHTTP(rt, req)
 
 		if wr.Code != http.StatusInternalServerError {
 			t.Fatal("error, code not 500, code:", wr.Code)
@@ -305,7 +305,7 @@ func userNotFoundTestFunc(store *testBalanceStore, req *http.Request, rt *chi.Mu
 func withoutJwtTestFunc(req *http.Request, rt *chi.Mux) func(t *testing.T) {
 	return func(t *testing.T) {
 		req = req.WithContext(context.Background())
-		wr := serveHttp(rt, req)
+		wr := serveHTTP(rt, req)
 
 		if wr.Code != http.StatusUnauthorized {
 			t.Error("error, code not 401, code:", wr.Code)
@@ -313,7 +313,7 @@ func withoutJwtTestFunc(req *http.Request, rt *chi.Mux) func(t *testing.T) {
 	}
 }
 
-func serveHttp(handler *chi.Mux, req *http.Request) *httptest.ResponseRecorder {
+func serveHTTP(handler *chi.Mux, req *http.Request) *httptest.ResponseRecorder {
 	wr := httptest.NewRecorder()
 	handler.ServeHTTP(wr, req)
 	return wr
