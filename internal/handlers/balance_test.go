@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/e-faizov/gophermart/internal/middlewares"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,16 +20,17 @@ import (
 
 func newBalanceRouter(h *Balances) *chi.Mux {
 	r := chi.NewRouter()
-	r.Get("/api/user/balance", h.Balance)
-	r.Post("/api/user/balance/withdraw", h.Withdraw)
-	r.Get("/api/user/withdrawals", h.Withdrawals)
+	ra := r.With(middlewares.Auth)
+	ra.Get("/api/user/balance", h.Balance)
+	ra.Post("/api/user/balance/withdraw", h.Withdraw)
+	ra.Get("/api/user/withdrawals", h.Withdrawals)
 
 	return r
 }
 
 func contextWithJwt(ctx context.Context, user string) context.Context {
 	tokenAuth := jwtauth.New("HS256", []byte("secret"), nil)
-	token, _, _ := tokenAuth.Encode(map[string]interface{}{userUUID: user})
+	token, _, _ := tokenAuth.Encode(map[string]interface{}{models.UserUUID: user})
 	return context.WithValue(ctx, jwtauth.TokenCtxKey, token)
 }
 

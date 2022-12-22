@@ -1,6 +1,7 @@
 package handlers
 
 import (
+	"github.com/e-faizov/gophermart/internal/models"
 	"io"
 	"net/http"
 
@@ -18,12 +19,7 @@ type Orders struct {
 func (o *Orders) Post(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromReq(r)
-	if err != nil {
-		log.Error().Err(err).Msg("Orders.Post error get user from request")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
+	userID := ctx.Value(models.UUIDKey).(string)
 
 	b, err := io.ReadAll(r.Body)
 	if err != nil {
@@ -61,12 +57,7 @@ func (o *Orders) Post(w http.ResponseWriter, r *http.Request) {
 func (o *Orders) Get(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromReq(r)
-	if err != nil {
-		log.Error().Err(err).Msg("Orders.Get error get user from request")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
+	userID := ctx.Value(models.UUIDKey).(string)
 
 	orders, err := o.Store.GetOrders(ctx, userID)
 	if err != nil {

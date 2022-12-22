@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/e-faizov/gophermart/internal/middlewares"
 	"io"
 	"net/http"
 	"testing"
@@ -17,8 +18,9 @@ import (
 
 func newOrderRouter(h *Orders) *chi.Mux {
 	r := chi.NewRouter()
-	r.Get("/api/user/orders", h.Get)
-	r.Post("/api/user/orders", h.Post)
+	ra := r.With(middlewares.Auth)
+	ra.Get("/api/user/orders", h.Get)
+	ra.Post("/api/user/orders", h.Post)
 
 	return r
 }

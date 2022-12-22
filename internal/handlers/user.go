@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"errors"
 	"io"
 	"net/http"
 	"time"
@@ -14,8 +13,6 @@ import (
 	"github.com/e-faizov/gophermart/internal/models"
 	"github.com/e-faizov/gophermart/internal/utils"
 )
-
-const userUUID = "user_uuid"
 
 type User struct {
 	Store     interfaces.UserStorage
@@ -108,7 +105,7 @@ func (u *User) Logout(w http.ResponseWriter, r *http.Request) {
 }
 
 func (u *User) token(user string) (string, error) {
-	_, tokenString, err := u.TokenAuth.Encode(map[string]interface{}{userUUID: user})
+	_, tokenString, err := u.TokenAuth.Encode(map[string]interface{}{models.UserUUID: user})
 	return tokenString, err
 }
 
@@ -124,17 +121,4 @@ func unmarshalUser(r *http.Request) (models.User, error) {
 		return models.User{}, utils.ErrorHelper(err)
 	}
 	return data, nil
-}
-
-func getUserFromReq(r *http.Request) (string, error) {
-	_, claims, err := jwtauth.FromContext(r.Context())
-	if err != nil {
-		return "", err
-	}
-
-	ret, ok := claims[userUUID]
-	if !ok {
-		return "", errors.New("user not found")
-	}
-	return ret.(string), nil
 }

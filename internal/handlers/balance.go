@@ -20,12 +20,7 @@ type Balances struct {
 func (b *Balances) Balance(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromReq(r)
-	if err != nil {
-		log.Error().Err(err).Msg("Orders.Balance error get user from request")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
+	userID := ctx.Value(models.UUIDKey).(string)
 
 	res, err := b.Store.BalanceByUser(ctx, userID)
 	if err != nil {
@@ -40,12 +35,7 @@ func (b *Balances) Balance(w http.ResponseWriter, r *http.Request) {
 func (b *Balances) Withdrawals(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromReq(r)
-	if err != nil {
-		log.Error().Err(err).Msg("Orders.Withdrawals error get user from request")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
+	userID := ctx.Value(models.UUIDKey).(string)
 
 	withdrawals, err := b.Store.WithdrawalsByUser(ctx, userID)
 	if err != nil {
@@ -64,12 +54,7 @@ func (b *Balances) Withdrawals(w http.ResponseWriter, r *http.Request) {
 func (b *Balances) Withdraw(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	userID, err := getUserFromReq(r)
-	if err != nil {
-		log.Error().Err(err).Msg("Orders.Withdraw error get user from request")
-		http.Error(w, "", http.StatusUnauthorized)
-		return
-	}
+	userID := ctx.Value(models.UUIDKey).(string)
 
 	body, err := io.ReadAll(r.Body)
 	if err != nil {

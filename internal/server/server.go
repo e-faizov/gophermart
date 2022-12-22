@@ -60,7 +60,7 @@ func StartServer(cfg config.GopherMartCfg) error {
 		r.Post("/login", userHandlers.Login)
 		r.Post("/logout", userHandlers.Logout)
 
-		ar := r.With(jwtauth.Verifier(tokenAuth), middlewares.CheckAuth)
+		ar := r.With(jwtauth.Verifier(tokenAuth), middlewares.Auth)
 
 		ar.Post("/orders", ordersHandler.Post)
 		ar.Get("/orders", ordersHandler.Get)
