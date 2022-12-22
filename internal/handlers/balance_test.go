@@ -4,7 +4,6 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"github.com/e-faizov/gophermart/internal/middlewares"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -15,6 +14,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/jwtauth"
 
+	"github.com/e-faizov/gophermart/internal/middlewares"
 	"github.com/e-faizov/gophermart/internal/models"
 )
 

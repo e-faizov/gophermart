@@ -1,7 +1,6 @@
 package handlers
 
 import (
-	"github.com/e-faizov/gophermart/internal/models"
 	"io"
 	"net/http"
 
@@ -10,6 +9,7 @@ import (
 	"github.com/rs/zerolog/log"
 
 	"github.com/e-faizov/gophermart/internal/interfaces"
+	"github.com/e-faizov/gophermart/internal/models"
 )
 
 type Orders struct {
