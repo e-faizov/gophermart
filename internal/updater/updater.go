@@ -2,7 +2,9 @@ package updater
 
 import (
 	"context"
+	"fmt"
 	"github.com/e-faizov/gophermart/internal/storage"
+	"github.com/hashicorp/go-multierror"
 	"github.com/rs/zerolog/log"
 	"time"
 
@@ -66,29 +68,46 @@ func (s *OrderUpdater) worker(ctx context.Context) {
 }
 
 func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) {
-	orders, err := s.Store.GetOrderIdsByStatus(ctx, status)
+	tx, err := s.Store.NewUpdaterTx(ctx)
 	if err != nil {
 		return false, err
+	}
+
+	rollback := func(err error) error {
+		errRoll := tx.Rollback()
+		if errRoll != nil {
+			err = multierror.Append(err, fmt.Errorf("error on rollback %w", errRoll))
+		}
+		return err
+	}
+
+	orders, err := tx.GetOrderIdsByStatus(ctx, status)
+	if err != nil {
+		return false, rollback(err)
 	}
 
 	for _, order := range orders {
 		log.Info().Msg("update order " + order + " with status " + status)
 		updatedOrder, toManyReq, err := s.Scores.GetScore(ctx, order)
 		if err != nil {
-			return false, err
+			return false, rollback(err)
 		}
 
 		if toManyReq {
-			return toManyReq, nil
+			return toManyReq, rollback(nil)
 		}
 
 		if updatedOrder.Status != status {
-			err = s.Store.UpdateOrder(ctx, updatedOrder)
+			err = tx.UpdateOrder(ctx, updatedOrder)
 			if err != nil {
-				return false, err
+				return false, rollback(err)
 			}
 		}
 
+	}
+	err = tx.Commit()
+	if err != nil {
+		return false, err
 	}
 	return false, nil
 }

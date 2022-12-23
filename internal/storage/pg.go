@@ -7,6 +7,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"github.com/e-faizov/gophermart/internal/interfaces"
 	"time"
 
 	"github.com/google/uuid"
@@ -163,48 +164,15 @@ func (p *PgStore) GetOrders(ctx context.Context, user string) ([]models.Order, e
 	return res, nil
 }
 
-func (p *PgStore) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string, error) {
-	script := `select t1.order_id from orders t1
-				join order_types t2
-				on t1.status=t2.id
-				where t2.type=$1
-				order by uploaded`
-	rows, err := p.db.QueryContext(ctx, script, tp)
+func (p *PgStore) NewUpdaterTx(ctx context.Context) (interfaces.OrderUpdateTx, error) {
+	tx, err := p.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, utils.ErrorHelper(err)
+		return nil, err
 	}
-	defer rows.Close()
-
-	var res []string
-	for rows.Next() {
-		var order string
-		err = rows.Scan(&order)
-		if err != nil {
-			return nil, utils.ErrorHelper(err)
-		}
-		res = append(res, order)
-	}
-	if err = rows.Err(); err != nil {
-		return nil, utils.ErrorHelper(err)
+	res := &orderUpdateTxImpl{
+		tx: tx,
 	}
 	return res, nil
-}
-
-func (p *PgStore) UpdateOrder(ctx context.Context, order models.Order) error {
-	switch order.Status {
-	case OtInvalid, OtNew, OtProcessing:
-		script := "update orders set status=(select id from order_types where type=$1) where order_id=$2"
-		_, err := p.db.ExecContext(ctx, script, order.Status, order.Number)
-		return utils.ErrorHelper(err)
-	case OtProcessed:
-		script :=
-			`with order_update as (update orders set status=(select id from order_types where type=$1), accrual=$2 where order_id=$3 returning user_id)
-		update balances set balance=balance+$2 where user_id=(select user_id from order_update)`
-		_, err := p.db.ExecContext(ctx, script, order.Status, order.Accrual, order.Number)
-		return utils.ErrorHelper(err)
-	}
-
-	return utils.ErrorHelper(errors.New("unknown order status: " + order.Status))
 }
 
 func (p *PgStore) WithdrawalsByUser(ctx context.Context, uuid string) ([]models.Withdraw, error) {
@@ -294,4 +262,59 @@ func calcHash(s string, k string) string {
 	h.Write([]byte(s))
 	hash := h.Sum(nil)
 	return fmt.Sprintf("%x", hash)
+}
+
+type orderUpdateTxImpl struct {
+	tx *sql.Tx
+}
+
+func (o *orderUpdateTxImpl) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string, error) {
+	script := `select t1.order_id from orders t1
+				join order_types t2
+				on t1.status=t2.id
+				where t2.type=$1
+				order by uploaded`
+	rows, err := o.tx.QueryContext(ctx, script, tp)
+	if err != nil {
+		return nil, utils.ErrorHelper(err)
+	}
+	defer rows.Close()
+
+	var res []string
+	for rows.Next() {
+		var order string
+		err = rows.Scan(&order)
+		if err != nil {
+			return nil, utils.ErrorHelper(err)
+		}
+		res = append(res, order)
+	}
+	if err = rows.Err(); err != nil {
+		return nil, utils.ErrorHelper(err)
+	}
+	return res, nil
+}
+
+func (o *orderUpdateTxImpl) UpdateOrder(ctx context.Context, order models.Order) error {
+	switch order.Status {
+	case OtInvalid, OtNew, OtProcessing:
+		script := "update orders set status=(select id from order_types where type=$1) where order_id=$2"
+		_, err := o.tx.ExecContext(ctx, script, order.Status, order.Number)
+		return utils.ErrorHelper(err)
+	case OtProcessed:
+		script :=
+			`with order_update as (update orders set status=(select id from order_types where type=$1), accrual=$2 where order_id=$3 returning user_id)
+		update balances set balance=balance+$2 where user_id=(select user_id from order_update)`
+		_, err := o.tx.ExecContext(ctx, script, order.Status, order.Accrual, order.Number)
+		return utils.ErrorHelper(err)
+	}
+
+	return utils.ErrorHelper(errors.New("unknown order status: " + order.Status))
+}
+
+func (o *orderUpdateTxImpl) Rollback() error {
+	return o.tx.Rollback()
+}
+func (o *orderUpdateTxImpl) Commit() error {
+	return o.tx.Commit()
 }

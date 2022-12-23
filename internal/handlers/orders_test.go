@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"github.com/e-faizov/gophermart/internal/interfaces"
 	"io"
 	"net/http"
 	"testing"
@@ -133,17 +134,15 @@ func TestOrdersGetHandler(t *testing.T) {
 }
 
 type testOrdersStore struct {
-	saveOrder           func(ctx context.Context, user, order string) (inserted bool, thisUser bool, err error)
-	getOrders           func(ctx context.Context, user string) ([]models.Order, error)
-	getOrderIdsByStatus func(ctx context.Context, status string) ([]string, error)
-	updateOrder         func(ctx context.Context, order models.Order) error
+	saveOrder    func(ctx context.Context, user, order string) (inserted bool, thisUser bool, err error)
+	getOrders    func(ctx context.Context, user string) ([]models.Order, error)
+	newUpdaterTx func(ctx context.Context) (interfaces.OrderUpdateTx, error)
 }
 
 func (t *testOrdersStore) Clear() {
 	t.saveOrder = nil
 	t.getOrders = nil
-	t.getOrderIdsByStatus = nil
-	t.updateOrder = nil
+	t.newUpdaterTx = nil
 }
 
 func (t *testOrdersStore) SaveOrder(ctx context.Context, user, order string) (inserted bool, thisUser bool, err error) {
@@ -158,15 +157,9 @@ func (t *testOrdersStore) GetOrders(ctx context.Context, user string) ([]models.
 	}
 	return nil, nil
 }
-func (t *testOrdersStore) GetOrderIdsByStatus(ctx context.Context, status string) ([]string, error) {
-	if t.getOrderIdsByStatus != nil {
-		return t.getOrderIdsByStatus(ctx, status)
+func (p *testOrdersStore) NewUpdaterTx(ctx context.Context) (interfaces.OrderUpdateTx, error) {
+	if p.newUpdaterTx != nil {
+		return p.newUpdaterTx(ctx)
 	}
 	return nil, nil
-}
-func (t *testOrdersStore) UpdateOrder(ctx context.Context, order models.Order) error {
-	if t.updateOrder != nil {
-		return t.updateOrder(ctx, order)
-	}
-	return nil
 }

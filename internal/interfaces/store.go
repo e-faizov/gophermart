@@ -14,8 +14,14 @@ type UserStorage interface {
 type OrdersStorage interface {
 	SaveOrder(ctx context.Context, user, order string) (inserted bool, thisUser bool, err error)
 	GetOrders(ctx context.Context, user string) ([]models.Order, error)
+	NewUpdaterTx(ctx context.Context) (OrderUpdateTx, error)
+}
+
+type OrderUpdateTx interface {
 	GetOrderIdsByStatus(ctx context.Context, status string) ([]string, error)
 	UpdateOrder(ctx context.Context, order models.Order) error
+	Rollback() error
+	Commit() error
 }
 
 type BalanceStorage interface {
