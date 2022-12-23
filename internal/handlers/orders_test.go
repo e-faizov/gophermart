@@ -157,9 +157,9 @@ func (t *testOrdersStore) GetOrders(ctx context.Context, user string) ([]models.
 	}
 	return nil, nil
 }
-func (p *testOrdersStore) NewUpdaterTx(ctx context.Context) (interfaces.OrderUpdateTx, error) {
-	if p.newUpdaterTx != nil {
-		return p.newUpdaterTx(ctx)
+func (t *testOrdersStore) NewUpdaterTx(ctx context.Context) (interfaces.OrderUpdateTx, error) {
+	if t.newUpdaterTx != nil {
+		return t.newUpdaterTx(ctx)
 	}
 	return nil, nil
 }
