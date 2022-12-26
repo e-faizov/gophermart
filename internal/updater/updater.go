@@ -106,11 +106,11 @@ func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) 
 			if err != nil {
 				return false, rollback(err)
 			}
-		}
 
-		err = tx.Commit()
-		if err != nil {
-			return false, err
+			err = tx.Commit()
+			if err != nil {
+				return false, err
+			}
 		}
 	}
 }
