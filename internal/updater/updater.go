@@ -113,5 +113,4 @@ func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) 
 			return false, err
 		}
 	}
-	return false, nil
 }
