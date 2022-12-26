@@ -268,15 +268,16 @@ type orderUpdateTxImpl struct {
 	tx *sql.Tx
 }
 
-func (o *orderUpdateTxImpl) GetOrderIdsByStatus(ctx context.Context, tp string) ([]string, error) {
+func (o *orderUpdateTxImpl) GetOrderIdsByStatus(ctx context.Context, tp string) (string, bool, error) {
 	script := `select t1.order_id from orders t1
 				join order_types t2
 				on t1.status=t2.id
 				where t2.type=$1
-				order by uploaded`
+				order by uploaded
+				limit 1`
 	rows, err := o.tx.QueryContext(ctx, script, tp)
 	if err != nil {
-		return nil, utils.ErrorHelper(err)
+		return "", false, utils.ErrorHelper(err)
 	}
 	defer rows.Close()
 
@@ -285,14 +286,19 @@ func (o *orderUpdateTxImpl) GetOrderIdsByStatus(ctx context.Context, tp string) 
 		var order string
 		err = rows.Scan(&order)
 		if err != nil {
-			return nil, utils.ErrorHelper(err)
+			return "", false, utils.ErrorHelper(err)
 		}
 		res = append(res, order)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, utils.ErrorHelper(err)
+		return "", false, utils.ErrorHelper(err)
 	}
-	return res, nil
+
+	if len(res) == 0 {
+		return "", true, nil
+	}
+
+	return res[0], false, nil
 }
 
 func (o *orderUpdateTxImpl) UpdateOrder(ctx context.Context, order models.Order) error {

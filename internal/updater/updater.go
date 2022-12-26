@@ -68,25 +68,30 @@ func (s *OrderUpdater) worker(ctx context.Context) {
 }
 
 func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) {
-	tx, err := s.Store.NewUpdaterTx(ctx)
-	if err != nil {
-		return false, err
-	}
 
-	rollback := func(err error) error {
-		errRoll := tx.Rollback()
-		if errRoll != nil {
-			err = multierror.Append(err, fmt.Errorf("error on rollback %w", errRoll))
+	for {
+		tx, err := s.Store.NewUpdaterTx(ctx)
+		if err != nil {
+			return false, err
 		}
-		return err
-	}
 
-	orders, err := tx.GetOrderIdsByStatus(ctx, status)
-	if err != nil {
-		return false, rollback(err)
-	}
+		rollback := func(err error) error {
+			errRoll := tx.Rollback()
+			if errRoll != nil {
+				err = multierror.Append(err, fmt.Errorf("error on rollback %w", errRoll))
+			}
+			return err
+		}
 
-	for _, order := range orders {
+		order, notFound, err := tx.GetOrderIdsByStatus(ctx, status)
+		if err != nil {
+			return false, rollback(err)
+		}
+
+		if notFound {
+			return false, nil
+		}
+
 		log.Info().Msg("update order " + order + " with status " + status)
 		updatedOrder, toManyReq, err := s.Scores.GetScore(ctx, order)
 		if err != nil {
@@ -104,10 +109,10 @@ func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) 
 			}
 		}
 
-	}
-	err = tx.Commit()
-	if err != nil {
-		return false, err
+		err = tx.Commit()
+		if err != nil {
+			return false, err
+		}
 	}
 	return false, nil
 }

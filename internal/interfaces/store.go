@@ -18,7 +18,7 @@ type OrdersStorage interface {
 }
 
 type OrderUpdateTx interface {
-	GetOrderIdsByStatus(ctx context.Context, status string) ([]string, error)
+	GetOrderIdsByStatus(ctx context.Context, status string) (string, bool, error)
 	UpdateOrder(ctx context.Context, order models.Order) error
 	Rollback() error
 	Commit() error
