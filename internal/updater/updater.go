@@ -66,7 +66,6 @@ func (s *OrderUpdater) worker(ctx context.Context) {
 		}
 	}
 }
-
 func (s *OrderUpdater) update(ctx context.Context, status string) (bool, error) {
 
 	for {
